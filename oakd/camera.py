@@ -27,8 +27,8 @@ class Camera:
         self.connectToCamera(device_info, friendly_id)
         self.gapSurfaces = []
         self.polygonList = []
-        self.configData = config['Windows']
-        #self.configData = config['Mac']
+        #self.configData = config['Windows']
+        self.configData = config['Mac']
         self.depthFrame = numpy.ndarray
 
     def check(self, p1, p2, base_array):
@@ -209,9 +209,15 @@ class Camera:
         return self.configData['basepath']+'edge.jpg', response
 
     def getDepth(self):
+        # Stuur camera controls
         self.controlQueueLEFT.send(self.ctrlLEFT)
         self.controlQueueRIGHT.send(self.ctrlRIGHT)
-        time.sleep(0.5)
+        # Leeg eerst de queue van oude frames
+        while self.depthQueue.has():
+            self.depthQueue.tryGet()
+        # Wacht even tot de volgende capture klaar is
+        time.sleep(0.2)
+        # Haal nieuwste frame op
         self.depthData = self.depthQueue.tryGet()
 
 
@@ -309,7 +315,7 @@ class Camera:
         self.depthData = None;
         while self.depthData is None:
             self.getDepth()
-        # self.depthFrame = self.depthData.getFrame()
+        self.depthFrame = self.depthData.getFrame()
         #
         #
         # self.controlQueueLEFT.send(self.ctrlLEFT)
@@ -323,7 +329,7 @@ class Camera:
 
         # Get disparity frame for nicer depth visualization
         self.disp = self.dispQ.tryGet().getFrame()
-        time.sleep(0.5)
+        time.sleep(0.1)
         self.disp = (self.disp * (255 / self.stereo.initialConfig.getMaxDisparity())).astype(np.uint8)
         self.disp = cv2.applyColorMap(self.disp, cv2.COLORMAP_JET)
 
@@ -356,23 +362,16 @@ class Camera:
             # self.text.putText(disp,
             #                   "Z: " + ("{:.1f}mm".format(spatials['z']) if not math.isnan(spatials['z']) else "--"),
             #                   (x + 10, y + 50))
-
-            cv2.imwrite(self.configData['basepath']+'disp.jpg', self.disp)
             index += 1
+        cv2.imwrite(self.configData['basepath'] + 'disp.jpg', self.disp)
         return self.configData['basepath']+"disp.jpg", self.roiList
 
     def getGapSurfaces(self, camParams):
 
-        for i in range(3):
-           self.controlQueueLEFT.send(self.ctrlLEFT)
-           self.controlQueueRIGHT.send(self.ctrlRIGHT)
-
-        self.depthData = self.depthQueue.tryGet()
-
+        self.depthData = None;
         while self.depthData is None:
-            self.controlQueueLEFT.send(self.ctrlLEFT)
-            self.controlQueueRIGHT.send(self.ctrlRIGHT)
-            self.depthData = self.depthQueue.tryGet()
+            self.getDepth()
+        self.depthFrame = self.depthData.getFrame()
 
         #distance from lens to case (
         caseDistance = camParams['caseDistance']
@@ -386,11 +385,6 @@ class Camera:
              self.polygonList.append([y,x])
 
         vertices = np.array(self.polygonList, dtype=np.uint32)
-
-        self.depthData = None;
-        while self.depthData is None:
-            self.getDepth()
-        self.depthFrame = self.depthData.getFrame()
 
         pic_array = np.asarray(self.depthFrame, dtype=np.uint32)
         x, y = pic_array.shape
@@ -472,9 +466,8 @@ class Camera:
             # self.text.putText(disp,
             #                   "Z: " + ("{:.1f}mm".format(spatials['z']) if not math.isnan(spatials['z']) else "--"),
             #                   (x + 10, y + 50))
-
-            cv2.imwrite(self.configData['basepath']+'dispSameAsLastImage.jpg', self.disp)
             index += 1
+        cv2.imwrite(self.configData['basepath'] + 'dispSameAsLastImage.jpg', self.disp)
         return self.configData['basepath']+"dispSameAsLastImage.jpg", self.roiList
 
     def connectToCamera(self,device_info,friendly_id):

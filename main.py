@@ -1,5 +1,7 @@
 # This is a sample Python script.
 import json
+from time import sleep
+
 import depthai as dai
 
 from entities.GapResult import GapResult

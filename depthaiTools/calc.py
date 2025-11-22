@@ -32,7 +32,7 @@ class HostSpatialsCalc:
         return math.atan(math.tan(HFOV / 2.0) * offset / (frame.shape[1] / 2.0))
 
     # roi has to be list of ints
-    def calc_spatials(self, depthData, roi, id, averaging_method=np.mean):
+    def calc_spatials(self, depthData, roi, id, averaging_method=np.median):
 
         depthFrame = depthData.getFrame()
 
