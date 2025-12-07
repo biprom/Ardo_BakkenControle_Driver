@@ -49,13 +49,13 @@ def dict2obj(dict1):
     return json.loads(json.dumps(dict1), object_hook=obj)
 
 #device_infos = dai.Device.getAllAvailableDevices()
-device_infos = [dai.DeviceInfo("192.168.68.200")]
-#device_infos = [dai.DeviceInfo("10.127.8.100"),
-#                 dai.DeviceInfo("10.127.8.101"),
-#                 dai.DeviceInfo("10.127.8.102"),
-#                 dai.DeviceInfo("10.127.8.103"),
-#                 dai.DeviceInfo("10.127.8.104"),
-#                 dai.DeviceInfo("10.127.8.105")]
+#device_infos = [dai.DeviceInfo("192.168.68.200")]
+device_infos = [dai.DeviceInfo("10.127.8.100"),
+                 dai.DeviceInfo("10.127.8.101"),
+                 dai.DeviceInfo("10.127.8.102"),
+                 dai.DeviceInfo("10.127.8.103"),
+                 dai.DeviceInfo("10.127.8.104"),
+                 dai.DeviceInfo("10.127.8.105")]
 if len(device_infos) == 0:
     raise RuntimeError("No devices found!")
 else:
@@ -87,6 +87,16 @@ def select_camera(friendly_id: int):
     return selected_camera
 
 select_camera(1)
+
+@app.route('/getRgbImage', methods=['GET'])
+def getRgbImage():
+    args = request.args
+    camParams = mongodb.getParamsForCam(args.get("address"))
+    for camera in cameras:
+        if camera.device_info.name == args.get("address"):
+            path,response = camera.getRgbImage()
+            #refImageId = mongodb.storeImage(cpHoughImage)
+            return response
 
 @app.route('/getGeometryImageIdAndLines', methods=['GET'])
 def getGeometryImageAndLines():

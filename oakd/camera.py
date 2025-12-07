@@ -1,6 +1,8 @@
 
 import math
+import os
 import time
+from datetime import datetime
 
 import depthai as dai
 import cv2
@@ -27,9 +29,10 @@ class Camera:
         self.connectToCamera(device_info, friendly_id)
         self.gapSurfaces = []
         self.polygonList = []
-        #self.configData = config['Windows']
-        self.configData = config['Mac']
+        self.configData = config['Windows']
+        #self.configData = config['Mac']
         self.depthFrame = numpy.ndarray
+        self.rgbFrame = numpy.ndarray
 
     def check(self, p1, p2, base_array):
         """
@@ -73,17 +76,21 @@ class Camera:
 
         # RGB cam -> 'rgb'
         controlInRGB = self.pipeline.create(dai.node.XLinkIn)
-        cam_rgb = self.pipeline.create(dai.node.Camera)
+        cam_rgb = self.pipeline.create(dai.node.ColorCamera)
         controlInLEFT = self.pipeline.create(dai.node.XLinkIn)
         monoLeft = self.pipeline.create(dai.node.Camera)
         controlInRIGHT = self.pipeline.create(dai.node.XLinkIn)
         monoRight = self.pipeline.create(dai.node.Camera)
         self.stereo = self.pipeline.create(dai.node.StereoDepth)
 
+        cam_rgb.setVideoSize(1280, 720)
+        cam_rgb.setPreviewSize(1280, 720)
+        cam_rgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
+        cam_rgb.setInterleaved(False)
 
         #cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
-        cam_rgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
-        cam_rgb.setSize(1280, 720)
+        #cam_rgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
+        #cam_rgb.setSize(1280, 720)
 
 
         # Properties
@@ -98,8 +105,8 @@ class Camera:
         self.stereo.setSubpixel(False)
 
         self.xout_rgb = self.pipeline.createXLinkOut()
-        self.xout_rgb.setStreamName("still")
-        cam_rgb.still.link(self.xout_rgb.input)
+        self.xout_rgb.setStreamName("rgb")  # nieuwe naam
+        cam_rgb.preview.link(self.xout_rgb.input)  # of cam_rgb.preview
 
         controlInRGB.setStreamName('controlRgb')
         controlInLEFT.setStreamName('controlLeft')
@@ -120,93 +127,34 @@ class Camera:
         xoutDepth.setStreamName("disp")
         self.stereo.disparity.link(xoutDepth.input)
 
+    def getRgbImage(self):
+        # Stuur camera controls
+        self.controlQueueRGB.send(self.ctrlRGB)
 
-    # def _create_pipeline(self):
-    #
-    #     # RGB cam -> 'rgb'
-    #     controlIn = self.pipeline.create(dai.node.XLinkIn)
-    #     configIn = self.pipeline.create(dai.node.XLinkIn)
-    #     cam_rgb = self.pipeline.create(dai.node.ColorCamera)
-    #     monoLeft = self.pipeline.create(dai.node.MonoCamera)
-    #     monoRight = self.pipeline.create(dai.node.MonoCamera)
-    #     self.stereo = self.pipeline.create(dai.node.StereoDepth)
-    #
-    #
-    #     #cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
-    #     cam_rgb.setFps(0.5)
-    #     cam_rgb.setPreviewSize(640, 360)
-    #     cam_rgb.setInterleaved(False)
-    #     cam_rgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
-    #     cam_rgb.setPreviewKeepAspectRatio(False)
-    #
-    #
-    #     # Properties
-    #     monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
-    #     monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
-    #     monoLeft.setFps(1)
-    #     monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
-    #     monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
-    #     monoRight.setFps(1)
-    #
-    #     self.stereo.initialConfig.setConfidenceThreshold(255)
-    #     self.stereo.setLeftRightCheck(True)
-    #     self.stereo.setSubpixel(False)
-    #
-    #     self.xout_rgb = self.pipeline.createXLinkOut()
-    #     self.xout_rgb.setStreamName("still")
-    #     cam_rgb.still.link(self.xout_rgb.input)
-    #
-    #     controlIn.setStreamName('control')
-    #     configIn.setStreamName('config')
-    #
-    #     # Linking
-    #     monoLeft.out.link(self.stereo.left)
-    #     monoRight.out.link(self.stereo.right)
-    #     controlIn.out.link(cam_rgb.inputControl)
-    #     configIn.out.link(cam_rgb.inputConfig)
-    #
-    #     xoutDepth = self.pipeline.create(dai.node.XLinkOut)
-    #     xoutDepth.setStreamName("depth")
-    #     self.stereo.depth.link(xoutDepth.input)
-    #
-    #     xoutDepth = self.pipeline.create(dai.node.XLinkOut)
-    #     xoutDepth.setStreamName("disp")
-    #     self.stereo.disparity.link(xoutDepth.input)
-    #
-    #     # Create a BoardConfig object
-    #     config = depthai.BoardConfig()
-    #     # Set the parameters
-    #     config.watchdogInitialDelayMs = 6000
-    #     config.watchdogTimeoutMs = 10000
-    #     self.pipeline.setBoardConfig(config)
+        # Queue leegmaken
+        while self.rgb_queue.has():
+            self.rgb_queue.tryGet()
+        # Wachten op een nieuw frame, maar NIET met time.sleep
+        rgbData = None
+        timeout = 1.0  # max 1 seconde wachten
+        start = time.time()
+        while time.time() - start < timeout:
+            if self.rgb_queue.has():
+                rgbData = self.rgb_queue.tryGet()
+                break
+            time.sleep(0.01)
+        if rgbData is None:
+            return None, {"status": "error", "message": "No RGB frame received"}
+        frame = rgbData.getCvFrame()
+        # Opslaan
+        save_path = os.path.join(self.configData['rgbPath'], 'rgb.jpg')
+        cv2.imwrite(save_path, frame)
+        response = {
+            "status": "ok",
+            "message": "RGB frame captured and saved"
+        }
+        return save_path, response
 
-
-
-    #This function is not used
-    def getImages(self, params):
-
-        for i in range(3):
-           self.controlQueueRGB.send(self.ctrlRGB)
-        in_rgb = self.rgb_queue.tryGet()
-
-        if in_rgb is None:
-            return
-
-        self.frame_rgb = in_rgb.getCvFrame()
-        cpHoughImage = np.copy(self.frame_rgb)
-
-        dstGrayScale = self.cvoperations.grayScaleImage(self.frame_rgb)
-
-        dstBlurry = self.cvoperations.blurImage(dstGrayScale, (params['width'], params['height']))
-
-        dstEdgeDetection = self.cvoperations.edgeDetection(dstBlurry, params['threshold1'], params['threshold2'],
-                                                           params['l2Gradient'])
-
-        response = {"Images are stored on hostfolder"}
-        cv2.imwrite(self.configData['basepath']+'grayscale.jpg', dstGrayScale)
-        cv2.imwrite(self.configData['basepath']+'blurry.jpg', dstBlurry)
-        cv2.imwrite(self.configData['basepath']+'edge.jpg', cpHoughImage)
-        return self.configData['basepath']+'edge.jpg', response
 
     def getDepth(self):
         # Stuur camera controls
@@ -215,10 +163,10 @@ class Camera:
         # Leeg eerst de queue van oude frames
         while self.depthQueue.has():
             self.depthQueue.tryGet()
-        # Wacht even tot de volgende capture klaar is
-        time.sleep(0.2)
         # Haal nieuwste frame op
-        self.depthData = self.depthQueue.tryGet()
+        while self.depthQueue.has():
+            self.depthData = self.depthQueue.tryGet()
+
 
 
     def getNewGeometry(self, params):
@@ -316,16 +264,6 @@ class Camera:
         while self.depthData is None:
             self.getDepth()
         self.depthFrame = self.depthData.getFrame()
-        #
-        #
-        # self.controlQueueLEFT.send(self.ctrlLEFT)
-        # self.controlQueueRIGHT.send(self.ctrlRIGHT)
-        # self.depthData = self.depthQueue.tryGet()
-        #
-        # while self.depthData == None:
-        #     self.controlQueueLEFT.send(self.ctrlLEFT)
-        #     self.controlQueueRIGHT.send(self.ctrlRIGHT)
-        #     self.depthData = self.depthQueue.tryGet()
 
         # Get disparity frame for nicer depth visualization
         self.disp = self.dispQ.tryGet().getFrame()
@@ -481,7 +419,7 @@ class Camera:
         self.text = TextHelper()
         self.hostSpatials = HostSpatialsCalc(self.device)
 
-        self.rgb_queue = self.device.getOutputQueue(name="still", maxSize=1, blocking=False)
+        self.rgb_queue = self.device.getOutputQueue(name="rgb", maxSize=1, blocking=False)
         self.depthQueue = self.device.getOutputQueue(name="depth", maxSize=1, blocking=False)
         self.dispQ = self.device.getOutputQueue(name="disp", maxSize=1, blocking=False)
         self.controlQueueRGB = self.device.getInputQueue('controlRgb', maxSize=1, blocking=False)
@@ -506,6 +444,7 @@ class Camera:
         self.y = None
         self.delta = None
         self.depthData = None
+        self.rgbData = None
 
         self.disp = None
         self.statusBlock = False
