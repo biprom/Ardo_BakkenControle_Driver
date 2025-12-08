@@ -30,6 +30,7 @@ class Camera:
         self.gapSurfaces = []
         self.polygonList = []
         self.configData = config['Windows']
+
         #self.configData = config['Mac']
         self.depthFrame = numpy.ndarray
         self.rgbFrame = numpy.ndarray
