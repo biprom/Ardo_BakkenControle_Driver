@@ -20,13 +20,11 @@ class Camera:
 
     def __init__(self, device_info: dai.DeviceInfo, friendly_id: int):
 
-        config = ConfigParser()
-        config.read('app.ini')
-
         self.connectToCamera(device_info, friendly_id)
         self.gapSurfaces = []
         self.polygonList = []
-        self.configData = config['Windows']
+        self.configData = 'C:\\Users\\bvandenberghe\\Documents\\software\\bakkencontrole\\'
+        self.configDataRgb = '\\\\ardo.grp\\fil\BEKO\\Unifrost\\Kwaliteitsdienst\\BakkenvulInstallatie\\'
 
         #self.configData = config['Mac']
         self.depthFrame = numpy.ndarray
@@ -145,7 +143,7 @@ class Camera:
             return None, {"status": "error", "message": "No RGB frame received"}
         frame = rgbData.getCvFrame()
         # Opslaan
-        save_path = os.path.join(self.configData['rgbPath'], datetime.now().strftime("%Y%m%dT%H%M%S")+'.jpg')
+        save_path = os.path.join(self.configDataRgb, datetime.now().strftime("%Y%m%dT%H%M%S")+'.jpg')
         cv2.imwrite(save_path, frame)
         response = {
             "status": "ok",
@@ -227,7 +225,7 @@ class Camera:
 
         #cv2.imwrite(self.configData['basepath']+'grayscale.jpg', dstGrayScale)
         #cv2.imwrite(self.configData['basepath']+'blurry.jpg', dstBlurry)
-        cv2.imwrite(self.configData['basepath']+'edgeDetection.jpg', dstEdgeDetection)
+        cv2.imwrite(self.configData+'edgeDetection.jpg', dstEdgeDetection)
 
         houghLines = self.cvoperations.houghLines(dstEdgeDetection, params['rho'], params['theta'], params['threshold'])
         if houghLines is not None:
@@ -249,8 +247,8 @@ class Camera:
         response = {"status": "status from biprom-driver",
                     "message": "message from biprom-driver",
                     "geometryEntityList": self.geometryList}
-        cv2.imwrite(self.configData['basepath']+'edge.jpg', cpHoughImage)
-        return self.configData['basepath']+'edge.jpg',response
+        cv2.imwrite(self.configData+'edge.jpg', cpHoughImage)
+        return self.configData+'edge.jpg',response
 
 
 
@@ -299,8 +297,8 @@ class Camera:
             #                   "Z: " + ("{:.1f}mm".format(spatials['z']) if not math.isnan(spatials['z']) else "--"),
             #                   (x + 10, y + 50))
             index += 1
-        cv2.imwrite(self.configData['basepath'] + 'disp.jpg', self.disp)
-        return self.configData['basepath']+"disp.jpg", self.roiList
+        cv2.imwrite(self.configData + 'disp.jpg', self.disp)
+        return self.configData+"disp.jpg", self.roiList
 
     def getGapSurfaces(self, camParams):
 
@@ -356,7 +354,7 @@ class Camera:
                     x, y, w, h = cv2.boundingRect(contours[i])
                     self.gapSurfaces.append({'area': area, 'width': w, 'height': h})
 
-        fileName = self.configData['basepath']+'gapNormalize.jpg'
+        fileName = self.configData+'gapNormalize.jpg'
         cv2.imwrite(fileName, result)
 
         return fileName,self.gapSurfaces
@@ -403,8 +401,8 @@ class Camera:
             #                   "Z: " + ("{:.1f}mm".format(spatials['z']) if not math.isnan(spatials['z']) else "--"),
             #                   (x + 10, y + 50))
             index += 1
-        cv2.imwrite(self.configData['basepath'] + 'dispSameAsLastImage.jpg', self.disp)
-        return self.configData['basepath']+"dispSameAsLastImage.jpg", self.roiList
+        cv2.imwrite(self.configData + 'dispSameAsLastImage.jpg', self.disp)
+        return self.configData+"dispSameAsLastImage.jpg", self.roiList
 
     def connectToCamera(self,device_info,friendly_id):
         self.geometryList = []
