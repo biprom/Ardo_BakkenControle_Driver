@@ -55,6 +55,7 @@ jobs:
         pip install Werkzeug==3.0.1
         pip install ws4py==0.5.1
         pip install zipp==3.17.0
+        pip install pyinstaller
         
 
     - name: Build EXE
