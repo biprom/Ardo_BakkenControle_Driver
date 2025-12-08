@@ -30,8 +30,6 @@ class obj:
 
 
 app = Flask(__name__)
-app.run()
-
 
 print("Casemeasurement starting...")
 
@@ -212,3 +210,5 @@ def connectToDevice():
             status=200,
             mimetype='text/plain')
             return response
+
+app.run()
