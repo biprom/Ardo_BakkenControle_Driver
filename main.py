@@ -32,6 +32,7 @@ class obj:
 app = Flask(__name__)
 app.run()
 
+
 print("Casemeasurement starting...")
 
 print("Connect to all available devices...")
