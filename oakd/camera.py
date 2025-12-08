@@ -18,9 +18,6 @@ from configparser import ConfigParser
 
 class Camera:
 
-    config = ConfigParser()
-    config.read('app.ini')
-
     def __init__(self, device_info: dai.DeviceInfo, friendly_id: int):
 
         config = ConfigParser()
