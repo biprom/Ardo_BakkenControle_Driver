@@ -19,7 +19,6 @@ from configparser import ConfigParser
 class Camera:
 
     def __init__(self, device_info: dai.DeviceInfo, friendly_id: int):
-
         self.connectToCamera(device_info, friendly_id)
         self.gapSurfaces = []
         self.polygonList = []
