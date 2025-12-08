@@ -22,6 +22,7 @@ jobs:
       run: |
         pip install -r requirements.txt
         pip install depthai==2.24.0.0
+        pymongo==4.6.1
         pip install pyinstaller
 
     - name: Build EXE
