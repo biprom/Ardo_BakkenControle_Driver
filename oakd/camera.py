@@ -29,8 +29,8 @@ class Camera:
         self.connectToCamera(device_info, friendly_id)
         self.gapSurfaces = []
         self.polygonList = []
-        self.configData = config['Windows']
-        #self.configData = config['Mac']
+        #self.configData = config['Windows']
+        self.configData = config['Mac']
         self.depthFrame = numpy.ndarray
         self.rgbFrame = numpy.ndarray
 
@@ -147,7 +147,7 @@ class Camera:
             return None, {"status": "error", "message": "No RGB frame received"}
         frame = rgbData.getCvFrame()
         # Opslaan
-        save_path = os.path.join(self.configData['rgbPath'], 'rgb.jpg')
+        save_path = os.path.join(self.configData['rgbPath'], datetime.now().strftime("%Y%m%dT%H%M%S")+'.jpg')
         cv2.imwrite(save_path, frame)
         response = {
             "status": "ok",
