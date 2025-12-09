@@ -23,7 +23,7 @@ class Camera:
         self.gapSurfaces = []
         self.polygonList = []
         self.configData = 'C:\\Users\\bvandenberghe\\Documents\\software\\bakkencontrole\\'
-        self.configDataRgb = '\\\\ardo.grp\\fil\BEKO\\Unifrost\\Kwaliteitsdienst\\BakkenvulInstallatie\\'
+        self.configDataRgb = 'Z:\\'
 
         #self.configData = config['Mac']
         self.depthFrame = numpy.ndarray
