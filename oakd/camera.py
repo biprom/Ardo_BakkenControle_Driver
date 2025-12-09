@@ -22,8 +22,13 @@ class Camera:
         self.connectToCamera(device_info, friendly_id)
         self.gapSurfaces = []
         self.polygonList = []
-        self.configData = 'C:\\Users\\bvandenberghe\\Documents\\software\\bakkencontrole\\'
-        self.configDataRgb = 'Z:\\'
+
+
+        # self.configData = 'C:\\Users\\bvandenberghe\\Documents\\software\\bakkencontrole\\'
+        # self.configDataRgb = 'Z:\\'
+
+        self.configData = '/Users/bramvandenberghe/bakkencontrole/'
+        self.configDataRgb = '/Users/bramvandenberghe/bakkencontrole/'
 
         #self.configData = config['Mac']
         self.depthFrame = numpy.ndarray
