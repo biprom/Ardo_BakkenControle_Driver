@@ -27,8 +27,8 @@ class Camera:
         # self.configData = 'C:\\Users\\bvandenberghe\\Documents\\software\\bakkencontrole\\'
         # self.configDataRgb = 'Z:\\'
 
-        self.configData = '/Users/bramvandenberghe/bakkencontrole/'
-        self.configDataRgb = '/Users/bramvandenberghe/bakkencontrole/'
+        self.configData = 'C:\\Users\\bram\\Documents\\software\\bakkencontrole\\'
+        self.configDataRgb = 'Z:\\'
 
         #self.configData = config['Mac']
         self.depthFrame = numpy.ndarray
